@@ -16,14 +16,16 @@ export default function Table() {
   const [rowModesModel, setCellModesModel] = React.useState<GridCellModesModel>(
     {}
   );
-
-  const handleCellClick = React.useCallback(
+console.log("Hi from React element");
+  const handleCellClick =
     (params: GridCellParams, event: React.MouseEvent) => {
       if(params.colDef.type==='actions'){
-        console.log(params.id)
-        console.log(rows)
-        console.log((rows as Company[]).find((row)=>row._id===params.id))
+      // TODO: fix bug. rows are empty when click delete action. See state 
+      console.log("This is what I return ");
+      console.log((rows as Company[]).find((row)=>row._id===params.id))
+
         deleteCompany((rows as Company[]).find((row)=>row._id===params.id))
+
         return;
       }
       if (!params.isEditable) {
@@ -67,9 +69,7 @@ export default function Table() {
           },
         };
       });
-    },
-    []
-  );
+    }
 
   const handleCellModesModelChange = React.useCallback(
     (newModel: GridCellModesModel) => {
@@ -92,9 +92,16 @@ export default function Table() {
 
   const deleteCompany= async (company:any) => {
     try {
-      console.log(company)
       const user = await app.logIn(credentials);
       const response = await user.functions.companyDelete(company);
+      console.log(response)
+
+      console.log("this is paresd ")
+
+      const data=JSON.parse
+      console.log(data)
+      //let see what is response for server if it is delted 0 then need to add somthing to notify user 
+      //that is error we are rendering somthing that can be deleted
       const nei =(rows as Company[]).filter((row)=>row._id!==company._id)
       setRows(nei);
       return response;
@@ -108,6 +115,7 @@ export default function Table() {
   > | null>(null);
 
   const credentials = Realm.Credentials.anonymous();
+
   React.useEffect(() => {
     const fetchData = async () => {
       try {
@@ -116,7 +124,7 @@ export default function Table() {
         const maped = response.map((element: Company) => {
           return { ...element, _id: element._id.toString() };
         });
-        console.log(maped);
+      console.log("Hi from effect ")
         setRows(maped);
       } catch (err) {
         console.error("Failed to log in", err);
