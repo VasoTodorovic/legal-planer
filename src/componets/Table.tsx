@@ -1,6 +1,14 @@
 import * as React from "react";
 import * as Realm from "realm-web";
-import {GridCellParams,GridCellModes,GridCellModesModel, DataGrid, GridRowModel, GridColDef, GridSlots } from "@mui/x-data-grid";
+import {
+  GridCellParams,
+  GridCellModes,
+  GridCellModesModel,
+  DataGrid,
+  GridRowModel,
+  GridColDef,
+  GridSlots,
+} from "@mui/x-data-grid";
 import { columns } from "./ColumnsDef";
 import Snackbar from "@mui/material/Snackbar";
 import Alert, { AlertProps } from "@mui/material/Alert";
@@ -12,64 +20,59 @@ interface Company {
 }
 
 export default function Table() {
-  const [rows, setRows] = React.useState <Company[]>([]);
+  const [rows, setRows] = React.useState<Company[]>([]);
   const [rowModesModel, setCellModesModel] = React.useState<GridCellModesModel>(
     {}
   );
-console.log("Hi from React element");
-  const handleCellClick =
-    (params: GridCellParams, event: React.MouseEvent) => {
-      if(params.colDef.type==='actions'){
-      // TODO: fix bug. rows are empty when click delete action. See state 
-      console.log("This is what I return ");
-      console.log((rows as Company[]).find((row)=>row._id===params.id))
+  //TODO: delte all conosle.log
+  const handleCellClick = (params: GridCellParams, event: React.MouseEvent) => {
+    if (params.colDef.type === "actions") {
+      deleteCompany((rows as Company[]).find((row) => row._id === params.id));
 
-        deleteCompany((rows as Company[]).find((row)=>row._id===params.id))
+      return;
+    }
+    if (!params.isEditable) {
+      return;
+    }
 
-        return;
-      }
-      if (!params.isEditable) {
-        return;
-      }
+    // Ignore portal
+    if (
+      (event.target as any).nodeType === 1 &&
+      !event.currentTarget.contains(event.target as Element)
+    ) {
+      return;
+    }
 
-      // Ignore portal
-      if (
-        (event.target as any).nodeType === 1 &&
-        !event.currentTarget.contains(event.target as Element)
-      ) {
-        return;
-      }
-
-      setCellModesModel((prevModel) => {
-        return {
-          // Revert the mode of the other cells from other rows
-          ...Object.keys(prevModel).reduce(
-            (acc, id) => ({
-              ...acc,
-              [id]: Object.keys(prevModel[id]).reduce(
-                (acc2, field) => ({
-                  ...acc2,
-                  [field]: { mode: GridCellModes.View },
-                }),
-                {}
-              ),
-            }),
-            {}
-          ),
-          [params.id]: {
-            // Revert the mode of other cells in the same row
-            ...Object.keys(prevModel[params.id] || {}).reduce(
-              (acc, field) => ({
-                ...acc,
+    setCellModesModel((prevModel) => {
+      return {
+        // Revert the mode of the other cells from other rows
+        ...Object.keys(prevModel).reduce(
+          (acc, id) => ({
+            ...acc,
+            [id]: Object.keys(prevModel[id]).reduce(
+              (acc2, field) => ({
+                ...acc2,
                 [field]: { mode: GridCellModes.View },
               }),
               {}
             ),
-            [params.field]: { mode: GridCellModes.Edit },
-          },
-        };
-      });
-    }
+          }),
+          {}
+        ),
+        [params.id]: {
+          // Revert the mode of other cells in the same row
+          ...Object.keys(prevModel[params.id] || {}).reduce(
+            (acc, field) => ({
+              ...acc,
+              [field]: { mode: GridCellModes.View },
+            }),
+            {}
+          ),
+          [params.field]: { mode: GridCellModes.Edit },
+        },
+      };
+    });
+  };
 
   const handleCellModesModelChange = React.useCallback(
     (newModel: GridCellModesModel) => {
@@ -83,27 +86,22 @@ console.log("Hi from React element");
     try {
       const user = await app.logIn(credentials);
       const response = await user.functions.addNewCompany();
-      console.log(response);
+
       return response;
     } catch (err) {
       console.error("Failed to log in", err);
     }
   };
 
-  const deleteCompany= async (company:any) => {
+  const deleteCompany = async (company: any) => {
     try {
       const user = await app.logIn(credentials);
       const response = await user.functions.companyDelete(company);
-      console.log(response)
 
-      console.log("this is paresd ")
-
-      const data=JSON.parse
-      console.log(data)
-      //let see what is response for server if it is delted 0 then need to add somthing to notify user 
-      //that is error we are rendering somthing that can be deleted
-      const nei =(rows as Company[]).filter((row)=>row._id!==company._id)
-      setRows(nei);
+      const filteredRows = (rows as Company[]).filter(
+        (row) => row._id !== company._id
+      );
+      setRows(filteredRows);
       return response;
     } catch (err) {
       console.error("Failed to log in", err);
@@ -124,7 +122,6 @@ console.log("Hi from React element");
         const maped = response.map((element: Company) => {
           return { ...element, _id: element._id.toString() };
         });
-      console.log("Hi from effect ")
         setRows(maped);
       } catch (err) {
         console.error("Failed to log in", err);
@@ -134,18 +131,21 @@ console.log("Hi from React element");
   }, []);
   const handleCloseSnackbar = () => setSnackbar(null);
 
-  const processRowUpdate1 = React.useCallback(
+  const processRowUpdate = React.useCallback(
     async (newRow: GridRowModel) => {
       try {
-        // Make the HTTP request to save the updated row to the server
-        console.log(newRow);
         const user = await app.logIn(credentials);
-        await user.functions.updateCompanies(newRow); //processRowUpdate1 Assuming postCompany accepts an array of companies
-        setSnackbar({
-          children: "Change successfully saved",
-          severity: "success",
-        });
-        return newRow;
+        const oldRow = rows.find((m) => m._id === newRow._id);
+        if (JSON.stringify(oldRow) !== JSON.stringify(newRow)) {
+          await user.functions.updateCompanies(newRow); //processRowUpdate Assuming postCompany accepts an array of companies
+          setSnackbar({
+            children: "Change successfully saved",
+            severity: "success",
+          });
+          return newRow;
+        } else {
+          return newRow;
+        }
       } catch (error: any) {
         setSnackbar({ children: error.message, severity: "error" });
         throw error; // Rethrow the error to indicate the failure of the row update
@@ -158,12 +158,11 @@ console.log("Hi from React element");
   }, []);
 
   return (
-    <div >
+    <div>
       <DataGrid
         slots={{
           toolbar: ToolBar as GridSlots["toolbar"],
         }}
-
         slotProps={{
           toolbar: {
             setRows,
@@ -175,7 +174,7 @@ console.log("Hi from React element");
         rows={rows}
         getRowId={(row) => row._id}
         columns={columns}
-        processRowUpdate={processRowUpdate1}
+        processRowUpdate={processRowUpdate}
         onProcessRowUpdateError={handleProcessRowUpdateError}
         onCellModesModelChange={handleCellModesModelChange}
         onCellClick={handleCellClick}
@@ -193,4 +192,3 @@ console.log("Hi from React element");
     </div>
   );
 }
-
