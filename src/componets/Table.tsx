@@ -25,6 +25,7 @@ export default function Table() {
     {}
   );
   //TODO: delte all conosle.log
+  //so this handleCellClick is wrap with Callback then I have to delet it 
   const handleCellClick = (params: GridCellParams, event: React.MouseEvent) => {
     if (params.colDef.type === "actions") {
       deleteCompany((rows as Company[]).find((row) => row._id === params.id));
@@ -74,12 +75,10 @@ export default function Table() {
     });
   };
 
-  const handleCellModesModelChange = React.useCallback(
+  const handleCellModesModelChange = 
     (newModel: GridCellModesModel) => {
       setCellModesModel(newModel);
-    },
-    []
-  );
+    }
 
   const app = new Realm.App({ id: "application-1-qmokd" });
   const postCompany = async () => {
@@ -131,8 +130,7 @@ export default function Table() {
   }, []);
   const handleCloseSnackbar = () => setSnackbar(null);
 
-  const processRowUpdate = React.useCallback(
-    async (newRow: GridRowModel) => {
+  const processRowUpdate = async (newRow: GridRowModel) => {
       try {
         const user = await app.logIn(credentials);
         const oldRow = rows.find((m) => m._id === newRow._id);
@@ -150,12 +148,10 @@ export default function Table() {
         setSnackbar({ children: error.message, severity: "error" });
         throw error; // Rethrow the error to indicate the failure of the row update
       }
-    },
-    [app, credentials]
-  );
-  const handleProcessRowUpdateError = React.useCallback((error: Error) => {
+    }
+  const handleProcessRowUpdateError = (error: Error) => {
     setSnackbar({ children: error.message, severity: "error" });
-  }, []);
+  }
 
   return (
     <div>
