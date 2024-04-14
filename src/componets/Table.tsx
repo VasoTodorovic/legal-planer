@@ -6,26 +6,33 @@ import {
   GridCellModesModel,
   DataGrid,
   GridRowModel,
-  GridColDef,
   GridSlots,
 } from "@mui/x-data-grid";
 import { columns } from "./ColumnsDef";
 import Snackbar from "@mui/material/Snackbar";
 import Alert, { AlertProps } from "@mui/material/Alert";
 import { ToolBar } from "./ToolBar";
+import { columns1, grouping } from "./assets/Quartil";
+import { defaultVisibility } from "./Visibility";
 interface Company {
   _id: string; //maby GridRowId
   name: string;
   legal: string;
 }
-
+const Quartil = {
+  Quartil1: 0,
+  Quartil2: 1,
+  Quartil3: 3,
+  Quartil4: 4,
+};
 export default function Table() {
   const [rows, setRows] = React.useState<Company[]>([]);
   const [rowModesModel, setCellModesModel] = React.useState<GridCellModesModel>(
     {}
   );
+  const [userType, setUserType] = React.useState(Quartil.Quartil1);
   //TODO: delte all conosle.log
-  //so this handleCellClick is wrap with Callback then I have to delet it 
+  //so this handleCellClick is wrap with Callback then I have to delet it
   const handleCellClick = (params: GridCellParams, event: React.MouseEvent) => {
     if (params.colDef.type === "actions") {
       deleteCompany((rows as Company[]).find((row) => row._id === params.id));
@@ -75,17 +82,83 @@ export default function Table() {
     });
   };
 
-  const handleCellModesModelChange = 
-    (newModel: GridCellModesModel) => {
-      setCellModesModel(newModel);
+  const columnVisibilityModel = React.useMemo(() => {
+    let visibilityObject: { [key: string]: any } = {};
+    if (userType === Quartil.Quartil1) {
+      columns1.forEach((a) => {
+        if (a["field"].startsWith("q1")) {
+          visibilityObject[a["field"]] = true;
+        } else {
+          visibilityObject[a["field"]] = false;
+        }
+      });
+      return visibilityObject;
+    } else if (userType === Quartil.Quartil2) {
+      //SEE not sure how this functioni
+      columns1.forEach((a) => {
+        if (a["field"].startsWith("q2")) {
+          visibilityObject[a["field"]] = true;
+        } else {
+          visibilityObject[a["field"]] = false;
+        }
+      });
+      return visibilityObject;
+    } else if (userType === Quartil.Quartil3) {
+      columns1.forEach((a) => {
+        if (a["field"].startsWith("q3")) {
+          visibilityObject[a["field"]] = true;
+        } else {
+          visibilityObject[a["field"]] = false;
+        }
+      });
+      return visibilityObject;
+    } else if (userType === Quartil.Quartil4) {
+      columns1.forEach((a) => {
+        if (a["field"].startsWith("q4")) {
+          visibilityObject[a["field"]] = true;
+        } else {
+          visibilityObject[a["field"]] = false;
+        }
+      });
+      return visibilityObject;
     }
+    columns1.forEach((a) => {
+      /* if (a["field"].startsWith("q4")) */ {
+        //   visibilityObject[a["field"]] = true;
+        // } else {
+        visibilityObject[a["field"]] = false;
+      }
+    });
+    return defaultVisibility;
+  }, [userType]);
+
+  const handleCellModesModelChange = (newModel: GridCellModesModel) => {
+    setCellModesModel(newModel);
+  };
 
   const app = new Realm.App({ id: "application-1-qmokd" });
   const postCompany = async () => {
     try {
       const user = await app.logIn(credentials);
-      const response = await user.functions.addNewCompany();
 
+      let defaultValue: { [key: string]: any } = {};
+
+      columns.forEach((a) => {
+        if (a["type"] === "singleSelect") {
+          if (a["field"] === "legal") {
+            defaultValue[a["field"]] = "DOO";
+          } else {
+            defaultValue[a["field"]] = "Ne";
+          }
+        }
+      });
+      defaultValue;
+      const response = await user.functions.addNew(defaultValue);
+      const id = response["response"]._id;
+      setSnackbar({
+        children: "Record with id: " + id + " successfully added",
+        severity: "success",
+      });
       return response;
     } catch (err) {
       console.error("Failed to log in", err);
@@ -131,27 +204,34 @@ export default function Table() {
   const handleCloseSnackbar = () => setSnackbar(null);
 
   const processRowUpdate = async (newRow: GridRowModel) => {
-      try {
-        const user = await app.logIn(credentials);
-        const oldRow = rows.find((m) => m._id === newRow._id);
-        if (JSON.stringify(oldRow) !== JSON.stringify(newRow)) {
-          await user.functions.updateCompanies(newRow); //processRowUpdate Assuming postCompany accepts an array of companies
-          setSnackbar({
-            children: "Change successfully saved",
-            severity: "success",
-          });
-          return newRow;
-        } else {
-          return newRow;
+    try {
+      const user = await app.logIn(credentials);
+      const oldRow = rows.find((m) => m._id === newRow._id);
+      if (JSON.stringify(oldRow) !== JSON.stringify(newRow)) {
+        const response = await user.functions.updateCompanies(newRow); //processRowUpdate Assuming postCompany accepts an array of companies
+        //TODO rewrite this 
+        if (oldRow !== undefined) {
+          var id = rows.indexOf(oldRow);
+          var newRows = rows.slice();
+          newRows[id] = response["response"];
+          setRows(newRows);
         }
-      } catch (error: any) {
-        setSnackbar({ children: error.message, severity: "error" });
-        throw error; // Rethrow the error to indicate the failure of the row update
+        setSnackbar({
+          children: "Change successfully saved",
+          severity: "success",
+        });
+        return newRow;
+      } else {
+        return oldRow;
       }
+    } catch (error: any) {
+      setSnackbar({ children: error.message, severity: "error" });
+      throw error; // Rethrow the error to indicate the failure of the row update
     }
+  };
   const handleProcessRowUpdateError = (error: Error) => {
     setSnackbar({ children: error.message, severity: "error" });
-  }
+  };
 
   return (
     <div>
@@ -164,15 +244,19 @@ export default function Table() {
             setRows,
             setRowModesModel: setCellModesModel,
             postCompany,
+            userType,
+            setUserType,
           },
         }}
         cellModesModel={rowModesModel}
         rows={rows}
         getRowId={(row) => row._id}
         columns={columns}
+        columnGroupingModel={grouping}
         processRowUpdate={processRowUpdate}
         onProcessRowUpdateError={handleProcessRowUpdateError}
         onCellModesModelChange={handleCellModesModelChange}
+        columnVisibilityModel={columnVisibilityModel}
         onCellClick={handleCellClick}
       />
       {!!snackbar && (
