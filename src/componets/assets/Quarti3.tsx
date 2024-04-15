@@ -4,7 +4,7 @@ import {
 } from "@mui/x-data-grid";
   
   export const columnsQ3: GridColDef[] = [
-    { field: "q3pdv", headerName: "PDV", width: 90 },
+    { field: "q3pdv" ,type: 'singleSelect', valueOptions: ["Da","Ne"], headerName: "PDV", width: 90, editable:true},
     {
       field: "q3porezNaDobit",
       headerName: "Porez na dobit",

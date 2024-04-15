@@ -208,8 +208,10 @@ export default function Table() {
       const user = await app.logIn(credentials);
       const oldRow = rows.find((m) => m._id === newRow._id);
       if (JSON.stringify(oldRow) !== JSON.stringify(newRow)) {
+        console.log(JSON.stringify(oldRow) !== JSON.stringify(newRow));
+        console.log(JSON.stringify(oldRow));
+        console.log(JSON.stringify(newRow));
         const response = await user.functions.updateCompanies(newRow); //processRowUpdate Assuming postCompany accepts an array of companies
-        //TODO rewrite this 
         if (oldRow !== undefined) {
           var id = rows.indexOf(oldRow);
           var newRows = rows.slice();
