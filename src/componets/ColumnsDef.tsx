@@ -2,9 +2,37 @@ import { GridColDef } from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import { columns1 } from "./assets/Quartil";
+
 const columnsb: GridColDef[] = [
   { field: "_id", type: "string" },
   { field: "name", editable: true },
+  //SEE
+  {
+    field: "id",
+    headerName: "maticni broj",
+    type: "number",
+    editable: true,
+    valueGetter: (
+      value: number,
+     
+    ) => {
+      // Custom logic to generate the value to display in the cell
+      return `${value}`;
+    },
+  },
+
+  {
+    field: "employee",
+    headerName: "broj zaposlenih",
+    type: "number",
+    editable: true,
+    valueGetter: (
+      value: number
+    ) => {
+      // Custom logic to generate the value to display in the cell
+      return `${value}`;
+    },
+  },
   {
     field: "legal",
     type: "singleSelect",
